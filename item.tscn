@@ -1,0 +1,74 @@
+[gd_scene load_steps=4 format=3 uid="uid://bwbutu23605su"]
+
+[ext_resource type="Texture2D" uid="uid://c6ls1m8ja0cxd" path="res://assets/box-front.png" id="1_ucch8"]
+
+[sub_resource type="GDScript" id="GDScript_078om"]
+script/source = "extends Node2D
+signal scannable;
+
+var dragging = false;
+var has_focus = false;
+
+
+var cursor_offset = Vector2(0,0);
+
+var front = load(\"res://assets/box-front.png\");
+var back = load(\"res://assets/box-back.png\");
+
+# Called when the node enters the scene tree for the first time.
+func _ready():
+	if randi() % 2:
+		$ItemSprite.texture = back;
+
+# Called every frame. 'delta' is the elapsed time since the previous frame.
+func _process(delta):
+	#Idk if signals are the right move here. I want the scanner to know whether the box is aligned right.
+	if $ItemSprite.texture == front:
+		emit_signal(\"scannable\");
+		$ItemSprite/ItemArea/ItemCollision.disabled = false;
+	else:
+		$ItemSprite/ItemArea/ItemCollision.disabled = true;
+	if dragging:
+		position = get_global_mouse_position() - cursor_offset;
+	if Input.is_action_just_pressed(\"flip_item\") && has_focus:
+		if $ItemSprite.texture == front:
+			$ItemSprite.texture = back;
+		else:
+			$ItemSprite.texture = front;
+
+func _on_item_button_button_down():
+	dragging = true;
+	has_focus = true;
+	move_to_front();
+	cursor_offset = get_global_mouse_position() - global_position;
+
+func _on_item_button_button_up():
+	dragging = false;
+	has_focus = false;
+"
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_1uixs"]
+size = Vector2(181, 213)
+
+[node name="item" type="Node2D"]
+script = SubResource("GDScript_078om")
+
+[node name="ItemSprite" type="Sprite2D" parent="."]
+texture = ExtResource("1_ucch8")
+
+[node name="ItemButton" type="Button" parent="ItemSprite"]
+self_modulate = Color(1, 1, 1, 0)
+offset_left = -88.0
+offset_top = -112.0
+offset_right = 95.0
+offset_bottom = 106.0
+
+[node name="ItemArea" type="Area2D" parent="ItemSprite"]
+
+[node name="ItemCollision" type="CollisionShape2D" parent="ItemSprite/ItemArea"]
+position = Vector2(3.5, -3.5)
+shape = SubResource("RectangleShape2D_1uixs")
+
+[connection signal="button_down" from="ItemSprite/ItemButton" to="." method="_on_item_button_button_down"]
+[connection signal="button_up" from="ItemSprite/ItemButton" to="." method="_on_item_button_button_up"]
+[connection signal="pressed" from="ItemSprite/ItemButton" to="." method="_on_item_button_pressed"]
